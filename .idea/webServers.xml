@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="07c76332-ca37-4b24-acab-ea6841d55838" name="cluster30" url="http://10.5.30.231">
+        <fileTransfer rootFolder="/lustre/luoxiangde.vendor/projects/nnunet_mini" host="10.5.30.231" port="21">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

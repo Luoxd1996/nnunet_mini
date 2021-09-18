@@ -17,14 +17,17 @@ from batchgenerators.utilities.file_and_folder_operations import maybe_mkdir_p, 
 default_num_threads = 4
 RESAMPLING_SEPARATE_Z_ANISO_THRESHOLD = 4
 # do not modify these unless you know what you are doing
-my_output_identifier = "nnUNet"
+my_output_identifier = "Attention_UNet"
 default_plans_identifier = "nnUNetPlansv2.1"
 default_data_identifier = 'nnUNetData_plans_v2.1'
-default_trainer = "nnUNetTrainerV2"
+default_trainer = "nnUNetTrainer"
 default_cascade_trainer = "nnUNetTrainerV2CascadeFullRes"
-nnUNet_raw_data_base='/data/nnUNetFrame/DATASET/nnUNet_raw'
-nnUNet_preprocessed='/data/nnUNetFrame/DATASET/nnUNet_preprocessed'
-RESULTS_FOLDER='/data/nnUNetFrame/DATASET/nnUNet_trained_models'
+# nnUNet_raw_data_base='/data/nnUNetFrame/DATASET/nnUNet_raw'
+# nnUNet_preprocessed='/data/nnUNetFrame/DATASET/nnUNet_preprocessed'
+# RESULTS_FOLDER='/data/nnUNetFrame/DATASET/nnUNet_trained_models'
+nnUNet_raw_data_base='/mnt/lustre/luoxiangde.vendor/projects/nnUNetFrame/DATASET/nnUNet_raw'
+nnUNet_preprocessed='/mnt/lustre/luoxiangde.vendor/projects/nnUNetFrame/DATASET/nnUNet_preprocessed'
+RESULTS_FOLDER='/mnt/lustre/luoxiangde.vendor/projects/nnUNetFrame/DATASET/nnUNet_trained_models'
 
 """
 PLEASE READ paths.md FOR INFORMATION TO HOW TO SET THIS UP

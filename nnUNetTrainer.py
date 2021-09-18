@@ -25,11 +25,12 @@ import torch
 from batchgenerators.utilities.file_and_folder_operations import *
 from torch import nn
 from torch.optim import lr_scheduler
-
+from data_augmentation_moreDA import get_moreDA_augmentation
 import nnunet
 from evaluator import aggregate_scores
 from segmentation_export import save_segmentation_nifti_from_softmax
-from nnunet import Generic_UNet
+# from nnunet import Generic_UNet
+from unet import UNet
 from neural_network import SegmentationNetwork
 from network_trainer import NetworkTrainer
 # from nnunet.postprocessing.connected_components import determine_postprocessing
@@ -41,14 +42,17 @@ from configuration import default_num_threads
 import torch
 from torch import nn
 import torch.nn.functional as F
-
-
+import segmentation_models_pytorch as smp
+from attention_unet import Attention_UNet
+from vnet import VNet
 class InitWeights_He(object):
     def __init__(self, neg_slope=1e-2):
         self.neg_slope = neg_slope
 
     def __call__(self, module):
-        if isinstance(module, nn.Conv3d) or isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d) or isinstance(module, nn.ConvTranspose3d):
+        if isinstance(module, nn.Conv3d) or isinstance(module, nn.Conv2d) or isinstance(module,
+                                                                                        nn.ConvTranspose2d) or isinstance(
+                module, nn.ConvTranspose3d):
             module.weight = nn.init.kaiming_normal_(
                 module.weight, a=self.neg_slope)
             if module.bias is not None:
@@ -111,6 +115,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.dataset_directory = dataset_directory
         self.output_folder_base = self.output_folder
         self.fold = fold
+        self.pin_memory = True
 
         self.plans = None
 
@@ -152,7 +157,7 @@ class nnUNetTrainer(NetworkTrainer):
 
         self.lr_scheduler_eps = 1e-3
         self.lr_scheduler_patience = 30
-        self.initial_lr = 3e-4
+        self.initial_lr = 1e-2
         self.weight_decay = 3e-5
 
         self.oversample_foreground_percent = 0.33
@@ -269,63 +274,49 @@ class nnUNetTrainer(NetworkTrainer):
         # self.print_to_log_file(self.net_num_pool_op_kernel_sizes)
         # self.print_to_log_file(self.net_conv_kernel_sizes)
 
-        net_numpool = len(self.net_num_pool_op_kernel_sizes)
+        # net_numpool = len(self.net_num_pool_op_kernel_sizes)
 
-        if self.threeD:
-            conv_op = nn.Conv3d
-            dropout_op = nn.Dropout3d
-            norm_op = nn.InstanceNorm3d
-        else:
-            conv_op = nn.Conv2d
-            dropout_op = nn.Dropout2d
-            norm_op = nn.InstanceNorm2d
+        # if self.threeD:
+        #     conv_op = nn.Conv3d
+        #     dropout_op = nn.Dropout3d
+        #     norm_op = nn.InstanceNorm3d
+        # else:
+        #     conv_op = nn.Conv2d
+        #     dropout_op = nn.Dropout2d
+        #     norm_op = nn.InstanceNorm2d
 
-        norm_op_kwargs = {'eps': 1e-5, 'affine': True}
-        dropout_op_kwargs = {'p': 0, 'inplace': True}
-        net_nonlin = nn.LeakyReLU
-        net_nonlin_kwargs = {'negative_slope': 1e-2, 'inplace': True}
-        self.network = Generic_UNet(self.num_input_channels, self.base_num_features, self.num_classes, net_numpool,
-                                    self.conv_per_stage, 2, conv_op, norm_op, norm_op_kwargs, dropout_op,
-                                    dropout_op_kwargs,
-                                    net_nonlin, net_nonlin_kwargs, False, False, lambda x: x, InitWeights_He(
-                                        1e-2),
-                                    self.net_num_pool_op_kernel_sizes, self.net_conv_kernel_sizes, False, True, True)
-        self.network.inference_apply_nonlin = softmax_helper
-
+        # norm_op_kwargs = {'eps': 1e-5, 'affine': True}
+        # dropout_op_kwargs = {'p': 0, 'inplace': True}
+        # net_nonlin = nn.LeakyReLU
+        # net_nonlin_kwargs = {'negative_slope': 1e-2, 'inplace': True}
+        # self.network = Generic_UNet(self.num_input_channels, self.base_num_features, self.num_classes, net_numpool,
+        #                             self.conv_per_stage, 2, conv_op, norm_op, norm_op_kwargs, dropout_op,
+        #                             dropout_op_kwargs,
+        #                             net_nonlin, net_nonlin_kwargs, False, False, lambda x: x, InitWeights_He(
+        #                                 1e-2),
+        #                             self.net_num_pool_op_kernel_sizes, self.net_conv_kernel_sizes, False, True, True)
+        # self.network.inference_apply_nonlin = softmax_helper
+        # self.network = UNet(self.num_input_channels, self.num_classes)
+        # self.network = smp.DeepLabV3Plus(encoder_name='resnet50', encoder_weights='imagenet',
+        #                                  in_channels=self.num_input_channels, classes=self.num_classes)
+        # self.network = Attention_UNet(feature_scale=2, n_classes=self.num_classes, is_deconv=True, in_channels=self.num_input_channels)
+        self.network = VNet(n_channels=self.num_input_channels, n_classes=self.num_classes)
         if torch.cuda.is_available():
             self.network.cuda()
 
+    # def initialize_optimizer_and_scheduler(self):
+    #     assert self.network is not None, "self.initialize_network must be called first"
+    #     self.optimizer = torch.optim.Adam(self.network.parameters(), self.initial_lr, weight_decay=self.weight_decay,
+    #                                       amsgrad=True)
+    #     self.lr_scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.2,
+    #                                                        patience=self.lr_scheduler_patience,
+    #                                                        verbose=True, threshold=self.lr_scheduler_eps,
+    #                                                        threshold_mode="abs")
     def initialize_optimizer_and_scheduler(self):
         assert self.network is not None, "self.initialize_network must be called first"
-        self.optimizer = torch.optim.Adam(self.network.parameters(), self.initial_lr, weight_decay=self.weight_decay,
-                                          amsgrad=True)
-        self.lr_scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.2,
-                                                           patience=self.lr_scheduler_patience,
-                                                           verbose=True, threshold=self.lr_scheduler_eps,
-                                                           threshold_mode="abs")
-
-    def plot_network_architecture(self):
-        try:
-            from batchgenerators.utilities.file_and_folder_operations import join
-            import hiddenlayer as hl
-            if torch.cuda.is_available():
-                g = hl.build_graph(self.network, torch.rand((1, self.num_input_channels, *self.patch_size)).cuda(),
-                                   transforms=None)
-            else:
-                g = hl.build_graph(self.network, torch.rand((1, self.num_input_channels, *self.patch_size)),
-                                   transforms=None)
-            g.save(join(self.output_folder, "network_architecture.pdf"))
-            del g
-        except Exception as e:
-            self.print_to_log_file("Unable to plot network architecture:")
-            self.print_to_log_file(e)
-
-            self.print_to_log_file("\nprinting the network instead:\n")
-            self.print_to_log_file(self.network)
-            self.print_to_log_file("\n")
-        finally:
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+        self.optimizer = torch.optim.SGD(self.network.parameters(), self.initial_lr, weight_decay=self.weight_decay,
+                                         momentum=0.99, nesterov=True)
+        self.lr_scheduler = None
 
     def save_debug_information(self):
         # saving some debug information
@@ -366,8 +357,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.plans = plans
 
         stage_plans = self.plans['plans_per_stage'][self.stage]
-        # self.batch_size = stage_plans['batch_size']
-        self.batch_size = 1
+        self.batch_size = stage_plans['batch_size']
         self.net_pool_per_axis = stage_plans['num_pool_per_axis']
         self.patch_size = np.array(stage_plans['patch_size']).astype(int)
         self.do_dummy_2D_aug = stage_plans['do_dummy_2D_data_aug']
@@ -392,7 +382,7 @@ class nnUNetTrainer(NetworkTrainer):
             self.print_to_log_file(
                 "WARNING! old plans file with missing conv_kernel_sizes. Attempting to fix it...")
             self.net_conv_kernel_sizes = [
-                [3] * len(self.net_pool_per_axis)] * (max(self.net_pool_per_axis) + 1)
+                                             [3] * len(self.net_pool_per_axis)] * (max(self.net_pool_per_axis) + 1)
         else:
             self.net_conv_kernel_sizes = stage_plans['conv_kernel_sizes']
 
@@ -527,7 +517,8 @@ class nnUNetTrainer(NetworkTrainer):
                                                          use_sliding_window: bool = True, step_size: float = 0.5,
                                                          use_gaussian: bool = True, pad_border_mode: str = 'constant',
                                                          pad_kwargs: dict = None, all_in_gpu: bool = False,
-                                                         verbose: bool = True, mixed_precision: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+                                                         verbose: bool = True, mixed_precision: bool = True) -> Tuple[
+        np.ndarray, np.ndarray]:
         """
         :param data:
         :param do_mirroring:
@@ -687,7 +678,7 @@ class nnUNetTrainer(NetworkTrainer):
                              json_output_file=join(
                                  output_folder, "summary.json"),
                              json_name=job_name +
-                             " val tiled %s" % (str(use_sliding_window)),
+                                       " val tiled %s" % (str(use_sliding_window)),
                              json_author="Fabian",
                              json_task=task, num_threads=default_num_threads)
 
@@ -769,7 +760,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.all_val_eval_metrics.append(np.mean(global_dc_per_class))
 
         self.print_to_log_file("Average global foreground Dice:", [
-                               np.round(i, 4) for i in global_dc_per_class])
+            np.round(i, 4) for i in global_dc_per_class])
         self.print_to_log_file("(interpret this as an estimate for the Dice of the different classes. This is not "
                                "exact.)")
 

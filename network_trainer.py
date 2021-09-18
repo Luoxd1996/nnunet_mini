@@ -48,6 +48,8 @@ def maybe_to_torch(d):
         d = torch.from_numpy(d).float()
     return d
 
+def poly_lr(epoch, max_epochs, initial_lr, exponent=0.9):
+    return initial_lr * (1 - epoch / max_epochs)**exponent
 
 def to_cuda(data, non_blocking=True, gpu_id=0):
     if isinstance(data, list):
@@ -93,6 +95,7 @@ class NetworkTrainer(object):
         self.lr_scheduler = None
         self.tr_gen = self.val_gen = None
         self.was_initialized = False
+        self.initial_lr = 1e-2
 
         ################# SET THESE IN INIT ################################################
         self.output_folder = None
@@ -111,7 +114,7 @@ class NetworkTrainer(object):
         # too high the training will take forever
         self.train_loss_MA_alpha = 0.93  # alpha * old + (1-alpha) * new
         self.train_loss_MA_eps = 5e-4  # new MA must be at least this much better (smaller)
-        self.max_num_epochs = 200
+        self.max_num_epochs = 1000
         self.num_batches_per_epoch = 250
         self.num_val_batches_per_epoch = 50
         self.also_val_in_tr_mode = False
@@ -518,17 +521,33 @@ class NetworkTrainer(object):
         if isfile(join(self.output_folder, "model_latest.model.pkl")):
             os.remove(join(self.output_folder, "model_latest.model.pkl"))
 
-    def maybe_update_lr(self):
-        # maybe update learning rate
-        if self.lr_scheduler is not None:
-            assert isinstance(self.lr_scheduler, (lr_scheduler.ReduceLROnPlateau, lr_scheduler._LRScheduler))
+    # def maybe_update_lr(self):
+    #     # maybe update learning rate
+    #     if self.lr_scheduler is not None:
+    #         assert isinstance(self.lr_scheduler, (lr_scheduler.ReduceLROnPlateau, lr_scheduler._LRScheduler))
+    #
+    #         if isinstance(self.lr_scheduler, lr_scheduler.ReduceLROnPlateau):
+    #             # lr scheduler is updated with moving average val loss. should be more robust
+    #             self.lr_scheduler.step(self.train_loss_MA)
+    #         else:
+    #             self.lr_scheduler.step(self.epoch + 1)
+    #     self.print_to_log_file("lr is now (scheduler) %s" % str(self.optimizer.param_groups[0]['lr']))
+    def maybe_update_lr(self, epoch=None):
+        """
+        if epoch is not None we overwrite epoch. Else we use epoch = self.epoch + 1
 
-            if isinstance(self.lr_scheduler, lr_scheduler.ReduceLROnPlateau):
-                # lr scheduler is updated with moving average val loss. should be more robust
-                self.lr_scheduler.step(self.train_loss_MA)
-            else:
-                self.lr_scheduler.step(self.epoch + 1)
-        self.print_to_log_file("lr is now (scheduler) %s" % str(self.optimizer.param_groups[0]['lr']))
+        (maybe_update_lr is called in on_epoch_end which is called before epoch is incremented.
+        herefore we need to do +1 here)
+
+        :param epoch:
+        :return:
+        """
+        if epoch is None:
+            ep = self.epoch + 1
+        else:
+            ep = epoch
+        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, self.max_num_epochs, self.initial_lr, 0.9)
+        self.print_to_log_file("lr:", np.round(self.optimizer.param_groups[0]['lr'], decimals=6))
 
     def maybe_save_checkpoint(self):
         """
@@ -625,7 +644,7 @@ class NetworkTrainer(object):
 
         self.plot_progress()
 
-        self.maybe_update_lr()
+        self.maybe_update_lr(self.epoch)
 
         self.maybe_save_checkpoint()
 

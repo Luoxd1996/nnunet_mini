@@ -14,6 +14,7 @@
 
 
 from nnUNetTrainerV2 import nnUNetTrainerV2
+from nnUNetTrainer import nnUNetTrainer
 import nnunet
 from batchgenerators.utilities.file_and_folder_operations import *
 # from nnunet.experiment_planning.summarize_plans import summarize_plans
@@ -57,7 +58,7 @@ def get_default_configuration(network, task, network_trainer, plans_identifier=d
     else:
         stage = possible_stages[-1]
     print([join(*search_in)], network_trainer, base_module)
-    trainer_class = nnUNetTrainerV2
+    trainer_class = nnUNetTrainer
 
     output_folder_name = join(network_training_output_dir,
                               network, task, network_trainer + "__" + plans_identifier)

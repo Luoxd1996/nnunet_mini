@@ -29,7 +29,7 @@ from dataset_loading import unpack_dataset
 from nnUNetTrainer import nnUNetTrainer
 from sklearn.model_selection import KFold
 from torch import nn
-from torch.cuda.amp import autocast
+# from torch.cuda.amp import autocast
 from batchgenerators.utilities.file_and_folder_operations import *
 
 
