@@ -593,16 +593,16 @@ class DataLoader2D(SlimDataLoaderBase):
         return {'data': data, 'seg': seg, 'properties': case_properties, "keys": keys}
 
 
-if __name__ == "__main__":
-    # print(preprocessing_output_dir)
-    preprocessing_output_dir = "/data/nnUNetFrame/DATASET/nnUNet_preprocessed"
-    t = "Task001_WestChinaNPC"
-    p = join(preprocessing_output_dir, t, "nnUNetData_plans_v2.1_stage0")
-    dataset = load_dataset(p)
-    patch_size = np.array([32,192,192])
-    dl = DataLoader3D(dataset, (32, 32, 32), (32, 32, 32), 2, oversample_foreground_percent=0.33)
-    dl = DataLoader3D(dataset, patch_size.astype(int), patch_size.astype(int), 2,
-                      oversample_foreground_percent=0.33)
-    print(dl.shape)
-    dl2d = DataLoader2D(dataset, (64, 64), patch_size.astype(int)[1:], 12,
-                        oversample_foreground_percent=0.33)
+# if __name__ == "__main__":
+#     # print(preprocessing_output_dir)
+#     preprocessing_output_dir = "/data/nnUNetFrame/DATASET/nnUNet_preprocessed"
+#     t = "Task001_WestChinaNPC"
+#     p = join(preprocessing_output_dir, t, "nnUNetData_plans_v2.1_stage0")
+#     dataset = load_dataset(p)
+#     print(len(dataset))
+#     patch_size = np.array([32,192,192])
+#     dl = DataLoader3D(dataset, (32, 32, 32), (32, 32, 32), 2, oversample_foreground_percent=0.33)
+#     dl = DataLoader3D(dataset, patch_size.astype(int), patch_size.astype(int), 2,
+#                       oversample_foreground_percent=0.33)
+#     dl2d = DataLoader2D(dataset, (64, 64), patch_size.astype(int)[1:], 12,
+#                         oversample_foreground_percent=0.33)

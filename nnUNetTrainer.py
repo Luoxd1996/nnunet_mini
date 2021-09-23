@@ -45,6 +45,9 @@ import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from attention_unet import Attention_UNet
 from vnet import VNet
+from unet_nested import NestedUNet
+from preprocessing import  PreprocessorFor2D, GenericPreprocessor
+
 class InitWeights_He(object):
     def __init__(self, neg_slope=1e-2):
         self.neg_slope = neg_slope
@@ -297,10 +300,13 @@ class nnUNetTrainer(NetworkTrainer):
         #                             self.net_num_pool_op_kernel_sizes, self.net_conv_kernel_sizes, False, True, True)
         # self.network.inference_apply_nonlin = softmax_helper
         # self.network = UNet(self.num_input_channels, self.num_classes)
-        # self.network = smp.DeepLabV3Plus(encoder_name='resnet50', encoder_weights='imagenet',
+        # self.network = smp.Unet(encoder_name='resnet50', encoder_weights='imagenet',
         #                                  in_channels=self.num_input_channels, classes=self.num_classes)
+        self.network = smp.DeepLabV3Plus(encoder_name='resnet50', encoder_weights='imagenet',
+                                         in_channels=self.num_input_channels, classes=self.num_classes)
         # self.network = Attention_UNet(feature_scale=2, n_classes=self.num_classes, is_deconv=True, in_channels=self.num_input_channels)
-        self.network = VNet(n_channels=self.num_input_channels, n_classes=self.num_classes)
+        # self.network = VNet(n_channels=self.num_input_channels, n_classes=self.num_classes)
+        # self.network = NestedUNet(num_classes=self.num_classes, input_channels=self.num_input_channels)
         if torch.cuda.is_available():
             self.network.cuda()
 
@@ -456,13 +462,14 @@ class nnUNetTrainer(NetworkTrainer):
         if preprocessor_name is None:
             if self.threeD:
                 preprocessor_name = "GenericPreprocessor"
+                preprocessor_class = GenericPreprocessor
             else:
                 preprocessor_name = "PreprocessorFor2D"
-
-        print("using preprocessor", preprocessor_name)
-        preprocessor_class = recursive_find_python_class([join(nnunet.__path__[0], "preprocessing")],
-                                                         preprocessor_name,
-                                                         current_module="nnunet.preprocessing")
+                preprocessor_class = PreprocessorFor2D
+        if preprocessor_name == "GenericPreprocessor":
+            preprocessor_class = GenericPreprocessor
+        else:
+            preprocessor_class = PreprocessorFor2D
         assert preprocessor_class is not None, "Could not find preprocessor %s in nnunet.preprocessing" % \
                                                preprocessor_name
         preprocessor = preprocessor_class(self.normalization_schemes, self.use_mask_for_norm,
@@ -542,12 +549,13 @@ class nnUNetTrainer(NetworkTrainer):
             assert self.data_aug_params["do_mirror"], "Cannot do mirroring as test time augmentation when training " \
                                                       "was done without mirroring"
 
-        valid = list((SegmentationNetwork, nn.DataParallel))
-        assert isinstance(self.network, tuple(valid))
+        # valid = list((SegmentationNetwork, nn.DataParallel))
+        # print(self.network)
+        # assert isinstance(self.network, tuple(valid))
 
         current_mode = self.network.training
         self.network.eval()
-        ret = self.network.predict_3D(data, do_mirroring=do_mirroring, mirror_axes=mirror_axes,
+        ret = SegmentationNetwork.predict_3D(data, do_mirroring=do_mirroring, mirror_axes=mirror_axes,
                                       use_sliding_window=use_sliding_window, step_size=step_size,
                                       patch_size=self.patch_size, regions_class_order=self.regions_class_order,
                                       use_gaussian=use_gaussian, pad_border_mode=pad_border_mode,
