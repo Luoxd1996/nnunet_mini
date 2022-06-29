@@ -1,5 +1,5 @@
-srun -p MIA -x SH-IDC1-10-5-30-198 --mpi=pmi2 --gres=gpu:1 --ntasks-per-node=1 --job-name=NPC --kill-on-bad-exit=1 python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 0 &
-srun -p MIA -x SH-IDC1-10-5-30-198 --mpi=pmi2 --gres=gpu:1 --ntasks-per-node=1 --job-name=NPC --kill-on-bad-exit=1 python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 1 &
-srun -p MIA -x SH-IDC1-10-5-30-198 --mpi=pmi2 --gres=gpu:1 --ntasks-per-node=1 --job-name=NPC --kill-on-bad-exit=1 python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 2 &
-srun -p MIA -x SH-IDC1-10-5-30-198 --mpi=pmi2 --gres=gpu:1 --ntasks-per-node=1 --job-name=NPC --kill-on-bad-exit=1 python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 3 &
-srun -p MIA -x SH-IDC1-10-5-30-198 --mpi=pmi2 --gres=gpu:1 --ntasks-per-node=1 --job-name=ABDSeg_Attention --kill-on-bad-exit=1 python -u -m run_training 3d_fullres nnUNetTrainer Task002_ABDSeg all
+python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 0 &
+python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 1 &
+python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 2 &
+python -u -m run_training 2d nnUNetTrainer Task001_WestChinaNPC 3 &
+python -u -m run_training 3d_fullres nnUNetTrainer Task002_ABDSeg all
