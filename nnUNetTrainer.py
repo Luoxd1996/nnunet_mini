@@ -308,16 +308,15 @@ class nnUNetTrainer(NetworkTrainer):
         # self.network = smp.DeepLabV3Plus(encoder_name='resnet50', encoder_weights='imagenet',
         #                                  in_channels=self.num_input_channels, classes=self.num_classes)
 
-        # self.network = SwinUNETR(
-        #     img_size=(64, 160, 160),
-        #     in_channels=self.num_input_channels,
-        #     out_channels=self.num_classes,
-        #     feature_size=24,
-        #     use_checkpoint=True,
-        # )
+        self.network = SwinUNETR(
+            img_size=(64, 160, 160),
+            in_channels=self.num_input_channels,
+            out_channels=self.num_classes,
+            feature_size=24,
+            use_checkpoint=True,
+        )
 
-        self.network = LCOVNet(input_channels=self.num_input_channels, n_classes=self.num_classes)
-
+        # self.network = LCOVNet(input_channels=self.num_input_channels, n_classes=self.num_classes)
         # self.network = Attention_UNet(feature_scale=2, n_classes=self.num_classes, is_deconv=True, in_channels=self.num_input_channels)
         # self.network = VNet(n_channels=self.num_input_channels, n_classes=self.num_classes)
         # self.network = NestedUNet(num_classes=self.num_classes, input_channels=self.num_input_channels)

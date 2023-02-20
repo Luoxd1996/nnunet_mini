@@ -17,7 +17,7 @@ from batchgenerators.utilities.file_and_folder_operations import maybe_mkdir_p, 
 default_num_threads = 4
 RESAMPLING_SEPARATE_Z_ANISO_THRESHOLD = 4
 # do not modify these unless you know what you are doing
-my_output_identifier = "LCOVNet" # network name!!!
+my_output_identifier = "SwinUNETR" # network name!!!
 default_plans_identifier = "nnUNetPlansv2.1"
 default_data_identifier = 'nnUNetData_plans_v2.1'
 default_trainer = "nnUNetTrainer"
