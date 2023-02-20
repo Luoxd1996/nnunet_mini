@@ -17,17 +17,15 @@ from batchgenerators.utilities.file_and_folder_operations import maybe_mkdir_p, 
 default_num_threads = 4
 RESAMPLING_SEPARATE_Z_ANISO_THRESHOLD = 4
 # do not modify these unless you know what you are doing
-my_output_identifier = "DeepLabV3+"
+my_output_identifier = "LCOVNet" # network name!!!
 default_plans_identifier = "nnUNetPlansv2.1"
 default_data_identifier = 'nnUNetData_plans_v2.1'
 default_trainer = "nnUNetTrainer"
 default_cascade_trainer = "nnUNetTrainerV2CascadeFullRes"
-# nnUNet_raw_data_base='/data/nnUNetFrame/DATASET/nnUNet_raw'
-# nnUNet_preprocessed='/data/nnUNetFrame/DATASET/nnUNet_preprocessed'
-# RESULTS_FOLDER='/data/nnUNetFrame/DATASET/nnUNet_trained_models'
-nnUNet_raw_data_base='/mnt/lustre/luoxiangde.vendor/projects/nnUNetFrame/DATASET/nnUNet_raw'
-nnUNet_preprocessed='/mnt/lustre/luoxiangde.vendor/projects/nnUNetFrame/DATASET/nnUNet_preprocessed'
-RESULTS_FOLDER='/mnt/lustre/luoxiangde.vendor/projects/nnUNetFrame/DATASET/nnUNet_trained_models'
+# path of nnUNet framework (your own path!!!)
+nnUNet_raw_data_base = '/media/luoxiangde/f40d5f2b-6f54-42f4-9dc5-d43ec89b9b8d/nnUNetFrame/DATASET/nnUNet_raw'
+nnUNet_preprocessed = '/media/luoxiangde/f40d5f2b-6f54-42f4-9dc5-d43ec89b9b8d/nnUNetFrame/DATASET/nnUNet_preprocessed'
+RESULTS_FOLDER = '/media/luoxiangde/f40d5f2b-6f54-42f4-9dc5-d43ec89b9b8d/nnUNetFrame/DATASET/nnUNet_trained_models'
 
 """
 PLEASE READ paths.md FOR INFORMATION TO HOW TO SET THIS UP
@@ -56,7 +54,8 @@ else:
     preprocessing_output_dir = None
 
 if network_training_output_dir_base is not None:
-    network_training_output_dir = join(network_training_output_dir_base, my_output_identifier)
+    network_training_output_dir = join(
+        network_training_output_dir_base, my_output_identifier)
     maybe_mkdir_p(network_training_output_dir)
 else:
     print("RESULTS_FOLDER is not defined and nnU-Net cannot be used for training or "

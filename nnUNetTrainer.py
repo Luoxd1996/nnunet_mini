@@ -43,10 +43,13 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
+from monai.networks.nets import SwinUNETR
 from attention_unet import Attention_UNet
 from vnet import VNet
 from unet_nested import NestedUNet
-from preprocessing import  PreprocessorFor2D, GenericPreprocessor
+from lcovnet import LCOVNet
+from preprocessing import PreprocessorFor2D, GenericPreprocessor
+
 
 class InitWeights_He(object):
     def __init__(self, neg_slope=1e-2):
@@ -302,8 +305,19 @@ class nnUNetTrainer(NetworkTrainer):
         # self.network = UNet(self.num_input_channels, self.num_classes)
         # self.network = smp.Unet(encoder_name='resnet50', encoder_weights='imagenet',
         #                                  in_channels=self.num_input_channels, classes=self.num_classes)
-        self.network = smp.DeepLabV3Plus(encoder_name='resnet50', encoder_weights='imagenet',
-                                         in_channels=self.num_input_channels, classes=self.num_classes)
+        # self.network = smp.DeepLabV3Plus(encoder_name='resnet50', encoder_weights='imagenet',
+        #                                  in_channels=self.num_input_channels, classes=self.num_classes)
+
+        # self.network = SwinUNETR(
+        #     img_size=(64, 160, 160),
+        #     in_channels=self.num_input_channels,
+        #     out_channels=self.num_classes,
+        #     feature_size=24,
+        #     use_checkpoint=True,
+        # )
+
+        self.network = LCOVNet(input_channels=self.num_input_channels, n_classes=self.num_classes)
+
         # self.network = Attention_UNet(feature_scale=2, n_classes=self.num_classes, is_deconv=True, in_channels=self.num_input_channels)
         # self.network = VNet(n_channels=self.num_input_channels, n_classes=self.num_classes)
         # self.network = NestedUNet(num_classes=self.num_classes, input_channels=self.num_input_channels)
@@ -388,7 +402,7 @@ class nnUNetTrainer(NetworkTrainer):
             self.print_to_log_file(
                 "WARNING! old plans file with missing conv_kernel_sizes. Attempting to fix it...")
             self.net_conv_kernel_sizes = [
-                                             [3] * len(self.net_pool_per_axis)] * (max(self.net_pool_per_axis) + 1)
+                [3] * len(self.net_pool_per_axis)] * (max(self.net_pool_per_axis) + 1)
         else:
             self.net_conv_kernel_sizes = stage_plans['conv_kernel_sizes']
 
@@ -525,7 +539,7 @@ class nnUNetTrainer(NetworkTrainer):
                                                          use_gaussian: bool = True, pad_border_mode: str = 'constant',
                                                          pad_kwargs: dict = None, all_in_gpu: bool = False,
                                                          verbose: bool = True, mixed_precision: bool = True) -> Tuple[
-        np.ndarray, np.ndarray]:
+            np.ndarray, np.ndarray]:
         """
         :param data:
         :param do_mirroring:
@@ -556,11 +570,11 @@ class nnUNetTrainer(NetworkTrainer):
         current_mode = self.network.training
         self.network.eval()
         ret = SegmentationNetwork.predict_3D(data, do_mirroring=do_mirroring, mirror_axes=mirror_axes,
-                                      use_sliding_window=use_sliding_window, step_size=step_size,
-                                      patch_size=self.patch_size, regions_class_order=self.regions_class_order,
-                                      use_gaussian=use_gaussian, pad_border_mode=pad_border_mode,
-                                      pad_kwargs=pad_kwargs, all_in_gpu=all_in_gpu, verbose=verbose,
-                                      mixed_precision=mixed_precision)
+                                             use_sliding_window=use_sliding_window, step_size=step_size,
+                                             patch_size=self.patch_size, regions_class_order=self.regions_class_order,
+                                             use_gaussian=use_gaussian, pad_border_mode=pad_border_mode,
+                                             pad_kwargs=pad_kwargs, all_in_gpu=all_in_gpu, verbose=verbose,
+                                             mixed_precision=mixed_precision)
         self.network.train(current_mode)
         return ret
 
@@ -686,7 +700,7 @@ class nnUNetTrainer(NetworkTrainer):
                              json_output_file=join(
                                  output_folder, "summary.json"),
                              json_name=job_name +
-                                       " val tiled %s" % (str(use_sliding_window)),
+                             " val tiled %s" % (str(use_sliding_window)),
                              json_author="Fabian",
                              json_task=task, num_threads=default_num_threads)
 
